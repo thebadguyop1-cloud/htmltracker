@@ -1,5 +1,12 @@
-const BOT_TOKEN = process.env.BOT_TOKEN || "8692327357:AAFQDRfZDaiuPwOFV7SOVXG0s73zUlKXICw";
-const CHAT_ID = process.env.CHAT_ID || "2052073049";
+const BOT_TOKEN = String(process.env.BOT_TOKEN || "").trim();
+const CHAT_ID = String(process.env.CHAT_ID || "").trim();
+
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN topilmadi. Render Environment ga BOT_TOKEN qo'ying.");
+}
+if (!CHAT_ID) {
+  throw new Error("CHAT_ID topilmadi. Render Environment ga CHAT_ID qo'ying.");
+}
 
 const express = require("express");
 const cors = require("cors");
@@ -131,7 +138,9 @@ async function pollTelegram() {
       }
     }
   } catch (err) {
-    console.error("Telegram polling xatosi:", err.message);
+    const status = err.response?.status;
+    const detail = err.response?.data || err.message;
+    console.error("Telegram polling xatosi:", status || "", detail);
   }
 
   setImmediate(pollTelegram);
