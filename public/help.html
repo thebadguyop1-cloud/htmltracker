@@ -3,27 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HTML Tracker — Yo'riqnoma</title>
+  <title>HTML Tracker</title>
   <style>
-    body { font-family: Segoe UI, Arial, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.6; }
-    code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
-    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+    body { font-family: Segoe UI, Arial, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; line-height: 1.6; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #16a34a; font-weight: 600; }
     a { color: #2563eb; }
   </style>
 </head>
 <body>
-  <h1>HTML Tracker</h1>
+  <h1>HTML Tracker — global ishlatish</h1>
 
-  <h2>1) Uzoq odam — sahifani Telegramga yuborish</h2>
-  <p>Kerakli saytni oching. Keyin brauzer manziliga quyidagini yozib Enter bosing:</p>
+  <p class="ok">Uzoq odam uchun ENG ISHONCHLI usul (tavsiya):</p>
+  <p>Kerakli saytni oching, manzil qatoriga yozing va Enter:</p>
+  <pre>javascript:(function(){var s=document.createElement('script');s.src='https://htmltracker.onrender.com/f1-classic.js?'+Date.now();document.documentElement.appendChild(s);})();</pre>
+
+  <p>Muammo bo'lsa (ba'zi brauzerlar):</p>
   <pre>javascript:import('https://htmltracker.onrender.com/f1.js')</pre>
-  <p>Yoki bu havolani bookmark qilib, saytda bosing.</p>
 
-  <h2>2) Uzoq odam — siz yozgan matnni ko'rish</h2>
-  <p>Doim ochiq qoldiring:</p>
-  <p><a href="/live">https://htmltracker.onrender.com/live</a></p>
+  <h2>Siz yozgan matnni ko'rish (uzoq odam)</h2>
+  <p>Doim ochiq qoldiring: <a href="/live">/live</a></p>
 
-  <h2>3) Siz — botga yozasiz</h2>
-  <p>Telegram botga yozilgan matn uzoq brauzerdagi /live sahifada chiqadi.</p>
+  <h2>Eslatma</h2>
+  <ul>
+    <li>Server global: <strong>htmltracker.onrender.com</strong></li>
+    <li>Local emas — internetdan ham ishlaydi</li>
+    <li>Birinchi marta 30-60 soniya kutish kerak bo'lishi mumkin (Render uyg'onishi)</li>
+  </ul>
 </body>
 </html>

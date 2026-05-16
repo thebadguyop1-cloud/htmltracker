@@ -124,6 +124,13 @@ app.get("/text-events", (req, res) => {
 app.post("/send-html", async (req, res) => {
   const { html, url } = req.body || {};
 
+  console.log(
+    "send-html keldi:",
+    "ip=", req.ip,
+    "origin=", req.get("origin") || "-",
+    "url=", url || "-"
+  );
+
   if (!html || typeof html !== "string") {
     return res.status(400).json({ success: false, error: "html maydoni bo'sh" });
   }
@@ -227,6 +234,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server:", publicUrl);
   console.log("Uzoq odam /live:", publicUrl + "/live");
-  console.log("Uzoq odam bookmarklet: import('" + publicUrl + "/f1.js')");
+  console.log("Uzoq odam bookmarklet: f1-classic.js (help.html da)");
   startBot();
 });

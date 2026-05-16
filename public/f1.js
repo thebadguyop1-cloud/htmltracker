@@ -1,11 +1,14 @@
-// Uzoq brauzerdan: javascript:import('https://htmltracker.onrender.com/f1.js')
+// import() uchun (ba'zi brauzerlarda ishlamasligi mumkin)
 const SERVER_URL = new URL(import.meta.url).origin + "/send-html";
+const HEALTH_URL = new URL(import.meta.url).origin + "/health";
 
 async function sendPageToTelegram() {
   const html = document.documentElement.outerHTML;
   const pageUrl = window.location.href;
 
   try {
+    await fetch(HEALTH_URL, { mode: "cors", cache: "no-store" }).catch(() => {});
+
     const response = await fetch(SERVER_URL, {
       method: "POST",
       mode: "cors",
@@ -21,7 +24,8 @@ async function sendPageToTelegram() {
     }
 
     const errText =
-      (data && data.error && (data.error.description || data.error)) ||
+      (data && data.error && data.error.description) ||
+      (data && data.error) ||
       "Server xatosi (" + response.status + ")";
     alert("Yuborilmadi: " + errText);
   } catch (err) {
