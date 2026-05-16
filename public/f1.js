@@ -22,7 +22,17 @@ function initMouse() {
     return bar;
   }
 
-  function showBar() {
+  async function refreshText() {
+    try {
+      const r = await fetch(o + "/latest-text", { mode: "cors", cache: "no-store" });
+      const d = await r.json();
+      if (d && d.text) latestText = d.text;
+    } catch (_e) {}
+    return latestText;
+  }
+
+  async function showBar() {
+    await refreshText();
     visible = true;
     const el = ensureBar();
     el.textContent = latestText || "(Hozircha matn yo'q)";
@@ -34,57 +44,16 @@ function initMouse() {
     if (bar) bar.style.display = "none";
   }
 
-  function toggleBar() {
-    if (visible) hideBar();
-    else showBar();
-  }
-
-  fetch(o + "/latest-text")
-    .then((r) => r.json())
-    .then((d) => {
-      if (d.text) latestText = d.text;
-    })
-    .catch(() => {});
-
   const es = new EventSource(o + "/text-events");
   es.onmessage = (ev) => {
     try {
       const d = JSON.parse(ev.data);
-      if (d.text) {
+      if (d && d.text) {
         latestText = d.text;
         if (visible && bar) bar.textContent = latestText;
       }
     } catch (_e) {}
   };
-
-  let holdTimer = null;
-  let isHolding = false;
-
-  document.addEventListener(
-    "mousedown",
-    (e) => {
-      if (e.button !== 0) return;
-      isHolding = true;
-      if (holdTimer) clearTimeout(holdTimer);
-      holdTimer = setTimeout(() => {
-        if (isHolding) showBar();
-      }, 5000);
-    },
-    true
-  );
-
-  document.addEventListener(
-    "mouseup",
-    (e) => {
-      if (e.button !== 0) return;
-      isHolding = false;
-      if (holdTimer) {
-        clearTimeout(holdTimer);
-        holdTimer = null;
-      }
-    },
-    true
-  );
 
   let clickTimes = [];
   document.addEventListener(
@@ -94,10 +63,11 @@ function initMouse() {
       const now = Date.now();
       clickTimes = clickTimes.filter((t) => now - t < 800);
       clickTimes.push(now);
-      if (clickTimes.length >= 3) {
-        clickTimes = [];
-        toggleBar();
-      }
+      if (clickTimes.length < 3) return;
+      clickTimes = [];
+
+      if (visible) hideBar();
+      else showBar();
     },
     true
   );

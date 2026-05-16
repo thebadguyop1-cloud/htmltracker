@@ -17,15 +17,19 @@ const path = require("path");
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, "public");
 const sseClients = new Set();
-let latestText = "";
+let textState = { text: "", updatedAt: null, id: 0 };
 let lastUpdateId = 0;
 let pollingActive = false;
 
 const publicUrl = process.env.RENDER_EXTERNAL_URL || "http://localhost:3000";
 
 function pushTextToBrowsers(text) {
-  latestText = text;
-  const payload = JSON.stringify({ text, updatedAt: new Date().toISOString() });
+  textState = {
+    text,
+    updatedAt: new Date().toISOString(),
+    id: textState.id + 1,
+  };
+  const payload = JSON.stringify(textState);
   for (const client of sseClients) {
     client.write(`data: ${payload}\n\n`);
   }
@@ -64,7 +68,7 @@ app.get("/", (_req, res) => {
 
 app.get("/health", (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.json({ ok: true, pollingActive, hasText: Boolean(latestText) });
+  res.json({ ok: true, pollingActive, hasText: Boolean(textState.text) });
 });
 
 app.get("/live", (_req, res) => {
@@ -106,7 +110,8 @@ app.get("/live", (_req, res) => {
 
 app.get("/latest-text", (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.json({ text: latestText });
+  res.setHeader("Cache-Control", "no-store");
+  res.json(textState);
 });
 
 app.get("/text-events", (req, res) => {
@@ -116,7 +121,7 @@ app.get("/text-events", (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  res.write(`data: ${JSON.stringify({ text: latestText })}\n\n`);
+  res.write(`data: ${JSON.stringify(textState)}\n\n`);
   sseClients.add(req);
 
   req.on("close", () => {
