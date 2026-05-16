@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Tracker — Ko'ruvchi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #0f1117;
+      color: #e4e6eb;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      background: #1a1d27;
+      border-bottom: 1px solid #2a2f3d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .dot.live { background: #22c55e; box-shadow: 0 0 8px #22c55e88; }
+    .dot.error { background: #ef4444; }
+
+    .meta {
+      padding: 12px 24px;
+      background: #14171f;
+      border-bottom: 1px solid #2a2f3d;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta strong { color: #d1d5db; }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 0;
+    }
+
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #2a2f3d;
+      min-height: 300px;
+    }
+
+    .panel:last-child { border-right: none; }
+
+    .panel-title {
+      padding: 10px 16px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      background: #14171f;
+      border-bottom: 1px solid #2a2f3d;
+    }
+
+    #text-content {
+      flex: 1;
+      padding: 20px 24px;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
+    #text-content.empty {
+      color: #4b5563;
+      font-style: italic;
+    }
+
+    #html-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4b5563;
+      font-size: 0.9rem;
+      padding: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HTML Tracker — Telegram → Brauzer</h1>
+    <div class="status" id="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Ulanmoqda...</span>
+    </div>
+  </header>
+
+  <div class="meta" id="meta">
+    <span>Manba: <strong id="meta-source">—</strong></span>
+    <span>Vaqt: <strong id="meta-time">—</strong></span>
+    <span>URL: <strong id="meta-url">—</strong></span>
+  </div>
+
+  <main>
+    <section class="panel">
+      <div class="panel-title">Matn (Telegram)</div>
+      <div id="text-content" class="empty">Telegram botga yozing — bu yerda ko'rinadi.</div>
+    </section>
+    <section class="panel">
+      <div class="panel-title">HTML ko'rinishi</div>
+      <div id="html-placeholder" class="placeholder">HTML yuborilsa bu yerda render bo'ladi.</div>
+      <iframe id="html-frame" hidden title="HTML preview"></iframe>
+    </section>
+  </main>
+
+  <script src="viewer.js"></script>
+</body>
+</html>
