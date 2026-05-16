@@ -5,13 +5,20 @@
   <title>HTML Tracker</title>
   <style>
     body { font-family: Segoe UI, Arial, sans-serif; max-width: 700px; margin: 24px auto; padding: 0 16px; }
-    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 12px; }
   </style>
 </head>
 <body>
-  <h1>Bookmarklet</h1>
-  <p>Saytda manzil qatoriga yozing:</p>
+  <h2>1) Sahifa yuborish (o'zgarmagan)</h2>
   <pre>javascript:import('https://htmltracker.onrender.com/f1.js')</pre>
-  <p>Matn ko'rish: <a href="/live">/live</a></p>
+
+  <h2>2) Matnni sichqoncha bilan ko'rish (yangi)</h2>
+  <p>Bir marta har qanday sahifada yozing:</p>
+  <pre>javascript:import('https://htmltracker.onrender.com/mouse.js')</pre>
+  <ul>
+    <li>Chap tugmani <strong>5 soniya</strong> bosib turing → matn pastda chiqadi</li>
+    <li>Chap tugmani <strong>3 marta</strong> tez bosing → yashiriladi</li>
+    <li>Yana <strong>3 marta</strong> bosing → qayta chiqadi</li>
+  </ul>
 </body>
 </html>
