@@ -234,6 +234,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server:", publicUrl);
   console.log("Uzoq odam /live:", publicUrl + "/live");
-  console.log("Uzoq odam bookmarklet: f1-classic.js (help.html da)");
+  console.log("Bookmarklet: javascript:import('" + publicUrl + "/f1.js')");
   startBot();
 });
