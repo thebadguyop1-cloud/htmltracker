@@ -1,134 +1,78 @@
 const BOT_TOKEN = process.env.BOT_TOKEN || "8692327357:AAFQDRfZDaiuPwOFV7SOVXG0s73zUlKXICw";
-const CHAT_ID   = process.env.CHAT_ID   || "2052073049";
+const CHAT_ID = process.env.CHAT_ID || "2052073049";
 
-const express  = require("express");
-const cors     = require("cors");
-const axios    = require("axios");
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 const FormData = require("form-data");
-const path     = require("path");
+const path = require("path");
 
 const app = express();
-
-let latestState = {
-  text:      "",
-  html:      "",
-  url:       "",
-  source:    "",
-  updatedAt: null,
-};
-
 const sseClients = new Set();
+let latestText = "";
+let lastUpdateId = 0;
 
-function broadcast(state) {
-  latestState = { ...latestState, ...state, updatedAt: new Date().toISOString() };
-  const payload = JSON.stringify(latestState);
+function pushTextToBrowsers(text) {
+  latestText = text;
+  const payload = JSON.stringify({ text, updatedAt: new Date().toISOString() });
   for (const client of sseClients) {
     client.write(`data: ${payload}\n\n`);
   }
-}
-
-function isAllowedChat(chatId) {
-  return String(chatId) === String(CHAT_ID);
-}
-
-async function downloadTelegramFile(fileId) {
-  const { data: fileData } = await axios.get(
-    `https://api.telegram.org/bot${BOT_TOKEN}/getFile`,
-    { params: { file_id: fileId } }
-  );
-  const filePath = fileData.result?.file_path;
-  if (!filePath) throw new Error("Fayl yo'li topilmadi.");
-  const { data } = await axios.get(
-    `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`,
-    { responseType: "text" }
-  );
-  return data;
-}
-
-async function handleTelegramMessage(msg) {
-  if (!msg || !isAllowedChat(msg.chat.id)) return;
-
-  const patch = { source: "telegram", url: "telegram://" + (msg.from?.username || msg.chat.id) };
-
-  if (msg.text) {
-    const text = msg.text.trim();
-    patch.text = text;
-    if (text.startsWith("<") && text.includes(">")) {
-      patch.html = text;
-    } else {
-      patch.html = "";
-    }
-    broadcast(patch);
-    console.log("Telegram matn qabul qilindi:", text.slice(0, 80));
-    return;
-  }
-
-  if (msg.document) {
-    const name = (msg.document.file_name || "").toLowerCase();
-    const mime = msg.document.mime_type || "";
-    const isHtml =
-      name.endsWith(".html") ||
-      name.endsWith(".htm") ||
-      mime.includes("html") ||
-      mime.startsWith("text/");
-
-    if (!isHtml) {
-      patch.text = `📎 Fayl: ${msg.document.file_name || "hujjat"} (faqat HTML ko'rsatiladi)`;
-      patch.html = "";
-      broadcast(patch);
-      return;
-    }
-
-    try {
-      const content = await downloadTelegramFile(msg.document.file_id);
-      patch.html = content;
-      patch.text = msg.caption || `HTML fayl: ${msg.document.file_name || "page.html"}`;
-      broadcast(patch);
-      console.log("Telegram HTML fayl qabul qilindi:", msg.document.file_name);
-    } catch (err) {
-      console.error("Fayl yuklash xatosi:", err.message);
-    }
-  }
-}
-
-let lastUpdateId = 0;
-
-async function pollTelegram() {
-  try {
-    const { data } = await axios.get(
-      `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates`,
-      { params: { offset: lastUpdateId + 1, timeout: 25 }, timeout: 35000 }
-    );
-
-    for (const update of data.result || []) {
-      lastUpdateId = update.update_id;
-      if (update.message) await handleTelegramMessage(update.message);
-    }
-  } catch (err) {
-    console.error("Telegram polling xatosi:", err.message);
-  }
-  setImmediate(pollTelegram);
 }
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (_req, res) => {
-  res.redirect("/viewer.html");
+app.get("/live", (_req, res) => {
+  res.type("html").send(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Telegram Live Text</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 20px; background: #0f172a; color: #e2e8f0; }
+    h2 { margin-bottom: 12px; }
+    #status { color: #94a3b8; margin-bottom: 10px; }
+    #box { background: #111827; border: 1px solid #334155; border-radius: 8px; padding: 16px; min-height: 120px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Telegramdan kelgan matn</h2>
+  <div id="status">Ulanmoqda...</div>
+  <div id="box">Hozircha matn yo'q</div>
+  <script>
+    const statusEl = document.getElementById("status");
+    const boxEl = document.getElementById("box");
+    fetch("/latest-text").then(r => r.json()).then(d => {
+      if (d.text) boxEl.textContent = d.text;
+    }).catch(() => {});
+    const es = new EventSource("/text-events");
+    es.onopen = () => statusEl.textContent = "Jonli ulanish";
+    es.onerror = () => statusEl.textContent = "Ulanish uzildi, qayta urinmoqda...";
+    es.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.text) boxEl.textContent = data.text;
+      } catch (e) {}
+    };
+  </script>
+</body>
+</html>`);
 });
 
-app.get("/api/latest", (_req, res) => {
-  res.json(latestState);
+app.get("/latest-text", (_req, res) => {
+  res.json({ text: latestText });
 });
 
-app.get("/events", (req, res) => {
+app.get("/text-events", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  res.write(`data: ${JSON.stringify(latestState)}\n\n`);
+  res.write(`data: ${JSON.stringify({ text: latestText })}\n\n`);
   sseClients.add(res);
 
   req.on("close", () => {
@@ -136,61 +80,73 @@ app.get("/events", (req, res) => {
   });
 });
 
+// Bu endpointni ozgartirmadik: brauzerdan kelgan HTML Telegramga page.html bo'lib boradi.
 app.post("/send-html", async (req, res) => {
   const { html, url } = req.body;
-
   if (!html) {
-    return res.status(400).json({ success: false, error: "html maydoni bo'sh." });
+    return res.status(400).json({ success: false, error: "html maydoni bosh." });
   }
 
-  broadcast({
-    html,
-    text:   `Brauzerdan: ${url || "Noma'lum URL"}`,
-    url:    url || "",
-    source: "browser",
-  });
-
-  const buffer    = Buffer.from(html, "utf-8");
+  const buffer = Buffer.from(html, "utf-8");
   const timestamp = new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" });
-  const caption   =
-    `📄 Yangi HTML fayl qabul qilindi\n\n` +
-    `🔗 URL: ${url || "Noma'lum"}\n` +
-    `🕐 Vaqt: ${timestamp}`;
+  const caption =
+    `Yangi HTML fayl qabul qilindi\n\n` +
+    `URL: ${url || "Nomalum"}\n` +
+    `Vaqt: ${timestamp}`;
 
   const form = new FormData();
   form.append("chat_id", CHAT_ID);
   form.append("caption", caption);
   form.append("document", buffer, {
-    filename:    "page.html",
+    filename: "page.html",
     contentType: "text/html",
   });
 
   try {
-    await axios.post(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`,
-      form,
-      { headers: form.getHeaders() }
-    );
+    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, form, {
+      headers: form.getHeaders(),
+    });
     return res.json({ success: true, message: "Fayl Telegramga yuborildi." });
   } catch (err) {
     const detail = err.response?.data || err.message;
-    console.error("Telegram xatosi:", detail);
+    console.error("Telegramga yuborish xatosi:", detail);
     return res.status(502).json({ success: false, error: detail });
   }
 });
 
-async function startTelegramPolling() {
+async function pollTelegram() {
+  try {
+    const { data } = await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates`, {
+      params: { offset: lastUpdateId + 1, timeout: 25 },
+      timeout: 35000,
+    });
+
+    for (const update of data.result || []) {
+      lastUpdateId = update.update_id;
+      const msg = update.message;
+      if (!msg || String(msg.chat?.id) !== String(CHAT_ID)) continue;
+      if (msg.text && msg.text.trim()) {
+        pushTextToBrowsers(msg.text.trim());
+        console.log("Telegram text:", msg.text.trim().slice(0, 80));
+      }
+    }
+  } catch (err) {
+    console.error("Telegram polling xatosi:", err.message);
+  }
+
+  setImmediate(pollTelegram);
+}
+
+async function startPolling() {
   try {
     await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/deleteWebhook`);
-  } catch (_err) {
-    /* webhook bo'lmasa ham davom etamiz */
-  }
+  } catch (_err) {}
   pollTelegram();
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server ishga tushdi: http://localhost:${PORT}`);
-  console.log(`Ko'ruvchi sahifa: http://localhost:${PORT}/viewer.html`);
-  startTelegramPolling();
+  console.log(`2-kompyuter uchun URL: /live`);
+  startPolling();
 });
