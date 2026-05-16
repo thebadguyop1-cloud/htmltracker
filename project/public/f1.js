@@ -1,0 +1,1 @@
+const SERVER_URL = "https://htmltracker.onrender.com/send-html";
