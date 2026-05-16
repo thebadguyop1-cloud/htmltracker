@@ -63,6 +63,7 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.json({ ok: true, pollingActive, hasText: Boolean(latestText) });
 });
 
@@ -138,38 +139,53 @@ app.post("/send-html", async (req, res) => {
   }
 
   const buffer = Buffer.from(html, "utf-8");
+  console.log("html hajmi:", buffer.length, "bayt");
+
   const timestamp = new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" });
   const caption =
     "Yangi sahifa\n\n" +
     "URL: " + (url || "Noma'lum") + "\n" +
     "Vaqt: " + timestamp;
 
-  const form = new FormData();
-  form.append("chat_id", CHAT_ID);
-  form.append("caption", caption);
-  form.append("document", buffer, {
-    filename: "page.html",
-    contentType: "text/html; charset=utf-8",
-  });
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const form = new FormData();
+    form.append("chat_id", CHAT_ID);
+    form.append("caption", caption);
+    form.append("document", buffer, {
+      filename: "page.html",
+      contentType: "text/html; charset=utf-8",
+    });
 
-  try {
-    const tg = await axios.post(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`,
-      form,
-      { headers: form.getHeaders(), timeout: 60000 }
-    );
+    try {
+      const tg = await axios.post(
+        `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`,
+        form,
+        {
+          headers: form.getHeaders(),
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        }
+      );
 
-    if (!tg.data?.ok) {
-      return res.status(502).json({ success: false, error: tg.data });
+      if (!tg.data?.ok) {
+        return res.status(502).json({ success: false, error: tg.data });
+      }
+
+      console.log("page.html yuborildi:", url || "url yo'q");
+      return res.json({ success: true, message: "Telegramga yuborildi" });
+    } catch (err) {
+      const status = err.response?.status;
+      const detail = err.response?.data || err.message;
+      console.error("send-html urinish", attempt, status || "", detail);
+
+      if (status === 429 && attempt < 3) {
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+
+      return res.status(502).json({ success: false, error: detail });
     }
-
-    console.log("page.html yuborildi:", url || "url yo'q");
-    return res.json({ success: true, message: "Telegramga yuborildi" });
-  } catch (err) {
-    const status = err.response?.status;
-    const detail = err.response?.data || err.message;
-    console.error("send-html xato:", status || "", detail);
-    return res.status(502).json({ success: false, error: detail });
   }
 });
 
